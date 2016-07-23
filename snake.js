@@ -2,7 +2,7 @@ var snake = (function(b){
   this.newPiece = false;
   this.position = new Array();
 
-  this.direction = [0,-1];
+  this.direction = [0,1];
 
   this.setDirection  = function(a){
     this.direction = new Array(a[0],a[1]);
@@ -15,17 +15,16 @@ var snake = (function(b){
     this.position = JSON.parse(JSON.stringify(a));
   }
   this.stillAlive = function(){
-    var alive = true;
     var head = this.position[0]
     for (var i = 1; i < this.position.length; i++) {
       if(this.position[i][0] == head[0] && this.position[i][1] == head[1]){
-        alive = false
+        return false;
       }
     }
     if(head[0] < 0 || head[1] < 0 || head[0] > 39 || head[1] > 59){
-      alive = false
+      return false;
     }
-    return alive;
+    return true;
   }
 
   this.setPosition(b);

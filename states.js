@@ -50,12 +50,9 @@ var states = (function(){
 
   my.stateList = [];
   my.currentState;
-  my.score = 0;
+//  my.score = 0;
 
   my.setCurrentState = function (i){
-    if(my.currentState){
-      my.score = my.currentState.snake.position.length;
-    }else{my.score = 0}
     if(i == parseInt(i)){
       my.currentState = new state(my.stateList[i])
     }else if(i instanceof state){
@@ -64,11 +61,13 @@ var states = (function(){
 
     if(!my.currentState.snake.stillAlive()){
       var mySnake = new snake([[20,5],[20,4],[20,3]]);
-      var myApple = new apple(24,26)
+      var myApple = new apple()
 
       var myState = new state(mySnake, myApple)
       my.currentState = myState;
     }
+    var newState = new state(my.currentState);
+    return newState
   }
 
   my.getCurrentState = function(){
@@ -76,26 +75,6 @@ var states = (function(){
     return newState
   }
 
-  my.getState = function (i){
-    return my.stateList[i]
-  }
-
-  my.addState = function (s,a){
-    if(!my.stateList){
-      my.stateList = new Array();
-    }
-      if(s instanceof snake && a instanceof apple){
-        my.stateList.push(new state(s,a));
-      }else if(s instanceof state){
-        my.stateList.push(new state(s));
-      }
-  }
-
-  my.emptyStates = function(){
-    while (my.stateList.length()) {
-      my.stateList.pop();
-    }
-  }
 
   my.plotCurrentState = function (){
     clearStage();
