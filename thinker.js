@@ -10,29 +10,32 @@ var thinker = (function(){
   my.init = function(){
     my.a = states.getCurrentState().snake.direction;
     my.s = states.getCurrentState();
-    my.w = Array(1,100,1,-100);
+    my.w = Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
     my.gamma = 1;
     my.eta = 0.1;
-    my.random = 0.01
+    my.random = 0.03
   }
+
+  my.maxScore = 0;
 
   my.step = function(){
     var sPrimed = my.s.getNextState(my.a)
     var aPrimed = my.selectA()
     var reward = 0;
-    if(sPrimed.snake.position.length > my.s.snake.position.length){
+    var newSnakeLength = sPrimed.snake.position.length
+    if(newSnakeLength > my.s.snake.position.length){
       reward = 5;
     }
-
+    if(newSnakeLength > my.maxScore){my.maxScore = newSnakeLength}
     var delta = reward
                 + my.gamma * my.findQ(sPrimed, aPrimed)
                 - my.findQ(my.s, my.a);
 
-    my.w[0] = my.w[0] + my.eta * delta;
-    my.w[1] = my.w[1] + my.eta * delta * my.f1(my.s, my.a);
-    my.w[2] = my.w[2] + my.eta * delta * my.f2(my.s, my.a);
-    my.w[3] = my.w[3] + my.eta * delta * my.f3(my.s, my.a);
-
+    var feat = my.features(my.s, my.a);
+    for(var i = 0; i < feat.length; i++){
+      //if(my.w[i] != Number(my.w[i])){my.w[i] = 0;}
+      my.w[i] = my.w[i] + my.eta * delta * sigmoid(feat[i]);
+    }
 
     my.s = states.setCurrentState(sPrimed);
     //so it doesnt die twice in a row
@@ -71,38 +74,65 @@ var thinker = (function(){
     return as[maxqi];
   }
 
-  my.findQ = function(s,a){
-    // return my.w[3] * my.f3(s,a)
-    return my.w[0] + my.w[1] * my.f1(s,a) + my.w[2] * my.f2(s,a) + my.w[3] * my.f3(s,a);
+  my.findQ = function(s, a){
+    var feat = my.features(s, a);
+    var q = 0;
+  //  console.log(my.w);
+    for(var i = 0; i < feat.length; i++){
+      q += my.w[i] * sigmoid(feat[i]);
+    }
+    return q;
   }
 
-
-  my.f1 = function(s,a){//eat apple on move?
-    if(dist(add(s.snake.position[0],a),s.apple.position) == 0){
-        return 1
-      }else{
-        return 0
-      }
+  my.features = function(s, a){
+    var featureArray = [1];
+    var wallFeatures = my.wallFeatures(s, a);
+    var appleFeature = subtract([0,0], absVector(subtract(add(s.snake.position[0],a),s.apple.position)));
+    //var appleFeature = my.appleFeature(s, a);
+    var snakeFeatures = my.snakeFeatures(s, a);
+    featureArray = featureArray.concat(wallFeatures).concat(appleFeature).concat(snakeFeatures);
+    return featureArray;
+  }
+  /*my.appleFeature = function(s, a){
+    var j = (dist(add(s.snake.position[0],a),s.apple.position) == 0)?1:0
+    var i = dist(add(s.snake.position[0],a),s.apple.position) < dist(s.snake.position[0],s.apple.position)?1:0
+    return [i,j]
+  }*/
+  my.wallFeatures = function(s,a){
+    var newPos = s.getNextState(a).snake.position
+    var head = newPos[0];
+    var ar = new Array(head[0] - 0, 59 - head[0], head[1] - 0, 59 - head[1])
+    ar.push()
+    var maxPos = [59,0,59,0];
+    for (var i = 0; i < newPos.length; i++) {
+      var piece = add(new Array(newPos[i][0],newPos[i][1]), a);
+      maxPos[0] = Math.min(maxPos[0], piece[0] - 0);
+      maxPos[1] = Math.min(maxPos[1], 59 - piece[0]);
+      maxPos[2] = Math.min(maxPos[2], piece[1] - 0);
+      maxPos[3] = Math.min(maxPos[3], 59 - piece[1]);
+    }
+    ar = ar.concat(maxPos);
+    return ar;
   }
 
-  my.f2 = function(s,a){//any closer to apple?
-    if(dist(add(s.snake.position[0],a),s.apple.position) < dist(s.snake.position[0],s.apple.position)){
-        return 1
-      }else{
-        return 0
-      }
+  my.snakeFeatures = function(s,a){
+    var newPos = s.getNextState(a).snake.position
+    var head = newPos[0];
+    var ar = new Array(head[0], head[1])
+    for (var i = 1; i < newPos.length; i++) {
+      ar = ar.concat(absVector(subtract(head,newPos[i])))
+    }
+    return ar
   }
-
-  my.f3 = function(s,a){//dead after moving
-    return s.getNextState(a).snake.stillAlive()?0:1;
-  }
-
-
 
   my.getW = function(){
-    var newW = new Array(my.w[0], my.w[1], my.w[2], my.w[3]);
+    var newW = new Array();
+    for(var i = 0; i < my.w.length; i++){
+      newW.push(my.w[i])
+    }
     return newW
   }
 
   return my;
 })();
+//////////////http://stackoverflow.com/questions/5797852/in-node-js-how-do-i-include-functions-from-my-other-files

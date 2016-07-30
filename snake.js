@@ -21,7 +21,7 @@ var snake = (function(b){
         return false;
       }
     }
-    if(head[0] < 0 || head[1] < 0 || head[0] > 39 || head[1] > 59){
+    if(head[0] < 0 || head[1] < 0 || head[0] > 59 || head[1] > 59){
       return false;
     }
     return true;
@@ -37,7 +37,7 @@ var apple = (function(i,j){
     this.position = new Array(i[0],i[1]);
   }
   if(i === undefined && j === undefined){
-    this.position = new Array(Math.floor(39*Math.random()),Math.floor(59*Math.random()))
+    this.position = new Array(Math.floor(59*Math.random()),Math.floor(59*Math.random()))
   }
 
 });
