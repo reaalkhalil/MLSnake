@@ -8,9 +8,9 @@ var thinker = (function(){
     my.w = Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	my.lastLength = 0;
     my.gamma = 1; // discount factor
-    my.eta = 0.1; // learning rate
-    my.random = 0; // exploration
-    my.lambda = 0.2; // regularisation
+    my.eta = 0.05; // learning rate
+    my.random = 0.0001; // exploration
+    my.lambda = 0.1; // regularisation
   };
 
   my.maxScore = 0;
@@ -29,14 +29,10 @@ var thinker = (function(){
     }
 	
 	if(lengthDiff < 0){
+	  reward = -0.5;
 	  console.log(my.lastLength);
     }
 
-    if(newSnakeLength > my.maxScore){
-      my.maxScore = newSnakeLength;
-	  console.log('new max score: ' + newSnakeLength + ' weights are: ');
-	  console.log(my.getW());
-	}
     var delta = reward +
       my.gamma * my.findQ(sPrimed, aPrimed) -
       my.findQ(my.s, my.a);
@@ -87,38 +83,69 @@ var thinker = (function(){
   my.features = function(s, a){
     var featureArray = [1];
     var wallFeatures = my.wallFeatures(s, a);
-    var appleFeature = my.appleFeature(s, a);
+    var appleFeatures = my.appleFeatures(s, a);
     var snakeFeatures = my.snakeFeatures(s, a);
-    featureArray = featureArray.concat(wallFeatures).concat(appleFeature).concat(snakeFeatures);
+    var mixedFeatures = my.mixedFeatures(s, a);
+	//var compressionFeature = my.compressionFeature(s, a);
+    featureArray = featureArray.concat(wallFeatures).concat(appleFeatures).concat(snakeFeatures).concat(mixedFeatures);
     return featureArray;
   };
 
-  my.appleFeature = function(s, a){
+  my.appleFeatures = function(s, a){
     var newPos = s.getNextState(a).snake.position;
     var head = newPos[0];
     var apple = s.apple.position;
     var k = new Array(-1*Math.abs(head[0] - apple[0])/10, -1*Math.abs(head[1] - apple[1])/10);
 	k[0] = (k[0]===0)?10:k[0];
 	k[1] = (k[1]===0)?10:k[1];
-    return [k[0],k[1]];
+    return k;
   };
 
   my.wallFeatures = function(s,a){
     var newPos = s.getNextState(a).snake.position;
     var head = newPos[0];
-    //var ar = new Array(head[0] + 1, 60 - head[0], head[1] + 1, 60 - head[1]);
-    var ar = new Array((head[0]<0)?0:10, (head[0]>59)?0:10, (head[1]<0)?0:10, (head[1]>59)?0:10);
-    return ar;
+    var k = new Array((head[0]<0)?0:10, (head[0]>59)?0:10, (head[1]<0)?0:10, (head[1]>59)?0:10);
+    return k;
   };
 
   my.snakeFeatures = function(s,a){
     var newPos = s.getNextState(a).snake.position;
     var head = newPos[0];
-    var b = 1;
+    var k = 1;
     for (var i = 1; i < newPos.length; i++) {
-	  b *= (dist(head,newPos[i])>0)?1:0;
+	  k *= (dist(head,newPos[i])>0)?10:0;
     }
-    return [b];
+    return [k];
+  };
+
+  my.mixedFeatures = function(s, a){
+	var snake = my.snakeFeatures(s, a)[0];
+	if(snake !== 0){
+	  snake = 0;
+	}else{
+	  snake = 10;
+	}
+	var wall = my.wallFeatures(s, a);
+	var apple = my.appleFeatures(s, a);
+	var mixed1 = new Array(apple[0]*wall[0]*wall[1]/10, apple[1]*wall[2]*wall[3]/10);
+	return mixed1;
+  };
+
+  my.compressionFeature = function(s,a){
+    var newPos = s.getNextState(a).snake.position;
+	var avgNextTo = 0.0;
+    for (var i = 1; i < newPos.length-1; i++) {
+      var nextToIt = 0.0;
+      for (var j = 0; j < newPos.length; j++) {
+        if(newPos[i][0] == newPos[j][0] && Math.abs(newPos[i][1] - newPos[j][1]) == 1){
+		  nextToIt++;
+		} else if(newPos[i][1] == newPos[j][1] && Math.abs(newPos[i][0] - newPos[j][0]) == 1){
+		  nextToIt++;
+		}
+	  }
+	  avgNextTo += nextToIt / (newPos.length - 2);
+	}
+	return [(avgNextTo-2)/10];
   };
 
   my.getW = function(){
